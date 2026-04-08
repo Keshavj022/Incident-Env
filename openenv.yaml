@@ -1,0 +1,25 @@
+name: incident_env
+description: >
+  SRE incident response environment. Agent diagnoses and remediates real
+  production failures in a simulated microservice mesh. Covers OOM crashes,
+  connection pool exhaustion, and data pipeline schema drift with cascading failures.
+version: 0.1.0
+tags:
+  - openenv
+  - sre
+  - incident-response
+  - data-pipeline
+  - real-world
+tasks:
+  - id: easy
+    name: OOM Crash
+    difficulty: easy
+    max_steps: 10
+  - id: medium
+    name: Connection Pool Exhaustion
+    difficulty: medium
+    max_steps: 15
+  - id: hard
+    name: Schema Drift + Pipeline Cascade
+    difficulty: hard
+    max_steps: 20
