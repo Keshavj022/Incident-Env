@@ -68,6 +68,10 @@ class IncidentEnvironment(Environment[IncidentAction, IncidentObservation, Incid
     def state(self) -> IncidentState:
         return self._state
 
+    def close(self) -> None:
+        # No-op: singleton instance must survive between HTTP requests.
+        pass
+
     # ── Async implementations ──────────────────────────────────────────
     async def async_reset(self, task_id: str = "easy") -> IncidentObservation:
         if self._mesh:

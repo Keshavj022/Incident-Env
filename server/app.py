@@ -5,9 +5,13 @@ from incident_env.server.environment import IncidentEnvironment
 
 BASE_DIR = os.getenv("INCIDENT_ENV_DB_DIR", "/tmp/incident_env_dbs")
 
+# Shared singleton — HTTP endpoints create a new instance per request,
+# so we return the SAME instance to preserve state between reset() and step().
+_shared_env = IncidentEnvironment(base_dir=BASE_DIR)
+
 
 def _make_env() -> IncidentEnvironment:
-    return IncidentEnvironment(base_dir=BASE_DIR)
+    return _shared_env
 
 
 app = create_app(_make_env, IncidentAction, IncidentObservation, env_name="incident_env")
