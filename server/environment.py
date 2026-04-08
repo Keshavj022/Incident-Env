@@ -26,6 +26,9 @@ class IncidentEnvironment(Environment[IncidentAction, IncidentObservation, Incid
         self._state = IncidentState()
         self._action_history: List[Tuple[IncidentAction, str]] = []
         self._max_steps: int = 10
+        # Persistent event loop for sync method fallbacks
+        import asyncio
+        self._loop = asyncio.new_event_loop()
 
     # ── OpenEnv interface ──────────────────────────────────────────────
     def reset(
@@ -34,9 +37,8 @@ class IncidentEnvironment(Environment[IncidentAction, IncidentObservation, Incid
         episode_id: Optional[str] = None,
         **kwargs: Any,
     ) -> IncidentObservation:
-        import asyncio
         task_id = kwargs.get("task_id", "easy")
-        return asyncio.get_event_loop().run_until_complete(self.async_reset(task_id=task_id))
+        return self._loop.run_until_complete(self.async_reset(task_id=task_id))
 
     def step(
         self,
@@ -44,8 +46,7 @@ class IncidentEnvironment(Environment[IncidentAction, IncidentObservation, Incid
         timeout_s: Optional[float] = None,
         **kwargs: Any,
     ) -> IncidentObservation:
-        import asyncio
-        return asyncio.get_event_loop().run_until_complete(self.async_step(action))
+        return self._loop.run_until_complete(self.async_step(action))
 
     async def reset_async(
         self,
@@ -94,6 +95,9 @@ class IncidentEnvironment(Environment[IncidentAction, IncidentObservation, Incid
         )
 
     async def async_step(self, action: IncidentAction) -> IncidentObservation:
+        # Auto-reset if step is called before reset (e.g. from web UI)
+        if self._mesh is None:
+            await self.async_reset(task_id="easy")
         # Validate target
         target_valid = (
             action.action_type == "mark_resolved"
