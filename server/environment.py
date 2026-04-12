@@ -26,28 +26,36 @@ class IncidentEnvironment(Environment[IncidentAction, IncidentObservation, Incid
         self._state = IncidentState()
         self._action_history: List[Tuple[IncidentAction, str]] = []
         self._max_steps: int = 10
-        # Persistent event loop for sync method fallbacks
+
+    # ── Sync interface (required by abstract base, but server uses async) ─
+    def reset(self, seed=None, episode_id=None, **kwargs):
         import asyncio
-        self._loop = asyncio.new_event_loop()
-
-    # ── OpenEnv interface ──────────────────────────────────────────────
-    def reset(
-        self,
-        seed: Optional[int] = None,
-        episode_id: Optional[str] = None,
-        **kwargs: Any,
-    ) -> IncidentObservation:
         task_id = kwargs.get("task_id", "easy")
-        return self._loop.run_until_complete(self.async_reset(task_id=task_id))
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            # Already inside an event loop (uvicorn) — can't use run_until_complete.
+            # Create a future and let the caller await it via the async path.
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                return pool.submit(asyncio.run, self.async_reset(task_id=task_id)).result()
+        return asyncio.run(self.async_reset(task_id=task_id))
 
-    def step(
-        self,
-        action: IncidentAction,
-        timeout_s: Optional[float] = None,
-        **kwargs: Any,
-    ) -> IncidentObservation:
-        return self._loop.run_until_complete(self.async_step(action))
+    def step(self, action, timeout_s=None, **kwargs):
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                return pool.submit(asyncio.run, self.async_step(action)).result()
+        return asyncio.run(self.async_step(action))
 
+    # ── Async interface (HTTP server calls these directly) ────────────
     async def reset_async(
         self,
         seed: Optional[int] = None,

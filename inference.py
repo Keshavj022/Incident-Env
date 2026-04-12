@@ -81,13 +81,13 @@ Do not guess. Query before acting.
 # ---------------------------------------------------------------------------
 
 def log_start(task, env, model):
-    print(json.dumps({"type": "START", "task": task, "env": env, "model": model}), flush=True)
+    print(f"[START] task={task} env={env} model={model}", flush=True)
 
 def log_step(step, action, reward, done, error):
-    print(json.dumps({"type": "STEP", "step": step, "action": action, "reward": reward, "done": done, "error": error}), flush=True)
+    print(f"[STEP] step={step} action={action} reward={reward} done={done} error={error}", flush=True)
 
 def log_end(success, steps, score, rewards):
-    print(json.dumps({"type": "END", "success": success, "steps": steps, "score": round(score, 4), "rewards": [round(r, 4) for r in rewards]}), flush=True)
+    print(f"[END] success={success} steps={steps} score={round(score, 4)} rewards={[round(r, 4) for r in rewards]}", flush=True)
 
 
 # ---------------------------------------------------------------------------
@@ -374,7 +374,8 @@ def main():
                         break
 
                 score = sum(rewards) / max_total_reward if max_total_reward > 0 else 0.0
-                score = min(max(score, 0.0), 1.0)
+                # Clamp to strictly (0, 1) as required by the competition validator
+                score = min(max(score, 0.001), 0.999)
                 success = score >= SUCCESS_SCORE_THRESHOLD
 
             except Exception as e:
