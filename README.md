@@ -1,19 +1,3 @@
----
-title: Incident Env Environment Server
-emoji: 🚨
-colorFrom: red
-colorTo: blue
-sdk: docker
-pinned: false
-app_port: 8000
-base_path: /web
-tags:
-  - openenv
-  - reinforcement-learning
-  - sre
-  - incident-response
----
-
 # incident_env
 
 An OpenEnv SRE incident response environment where AI agents diagnose and remediate real production failures in a simulated microservice mesh.
